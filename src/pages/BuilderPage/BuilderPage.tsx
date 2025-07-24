@@ -1,94 +1,66 @@
-import { Spin } from "antd";
-import { useGetCountries } from "../../services/countries/useGetCountires";
-import { useCallback } from "react";
-import { addEdge, Background, MarkerType, ReactFlow, useEdgesState, useNodesState, type Connection, type Edge, type EdgeTypes, type Node, type NodeTypes } from "@xyflow/react";
-import CustomConnectionLine from "../../components/CustomConnectionLine/CustomConnectionLine";
-import CustomNode from "../../components/CustomNode/CustomNode";
-import FloatingEdge from "../../components/FloatingEdge/FloatingEdge";
+import { Splitter } from "antd";
+import { useCallback, useState } from "react";
+import { addEdge, applyEdgeChanges, applyNodeChanges, type Connection, type Edge, type EdgeChange, type Node, type NodeChange } from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
-
-interface Country {
-    name: {
-        common: string;
-        official: string;
-        nativeName: {
-            [key: string]: {
-                official: string;
-                common: string;
-            }
-        }
-    },
-    flag: string;
-}
-
-const connectionLineStyle = {
-    stroke: '#b1b1b7',
-};
-
-const nodeTypes = {
-    custom: CustomNode,
-};
-
-const edgeTypes = {
-    floating: FloatingEdge,
-};
-
-const defaultEdgeOptions = {
-    type: 'floating',
-    markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: '#b1b1b7',
-    },
-};
+import { AddCountryNodePanel } from "../../components/AddCountryNodePanel/AddCountryNodePanel";
+import type { Country } from "../../domain/country";
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
+import { RouteGraph } from "../../components/RouteGraph/RouteGraph";
 
 export const BuilderPage = () => {
-    const { countries, isCountriesLoading } = useGetCountries();
-    const topTenCountries: Country[] = Array.isArray(countries) ? countries.slice(0, 5) : [];
+    const [nodes, setNodes] = useState<Node[]>([]);
+    const [edges, setEdges] = useState<Edge[]>([]);
 
-    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-
+    const onNodesChange = useCallback(
+        (changes: NodeChange[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
+        [],
+    );
+    const onEdgesChange = useCallback(
+        (changes: EdgeChange[]) => setEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
+        [],
+    );
     const onConnect = useCallback(
-        (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-        [setEdges],
+        (params: Connection) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
+        [],
     );
 
-    if (isCountriesLoading) {
-        return <Spin size="large" />
+    const onAddCountryNode = useCallback(
+        (country: Country) => {
+            setNodes((nodesSnapshot) => {
+                const newNode: Node = {
+                    id: country.name.common,
+                    position: { x: 0, y: 0 },
+                    data: {
+                        label: <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span>{country.flag}</span>
+                            <span>{country.name.common}</span>
+                        </div>
+                    },
+                };
+                return [...nodesSnapshot, newNode];
+            });
+        },
+        [],
+    );
+
+
+    function handleDragEnd(event: DragEndEvent) {
+        if (event.over && event.over.id === 'droppable') {
+            onAddCountryNode(event.active.data.current?.country);
+        }
     }
 
-    console.log(nodes);
 
     return (
-        <div>
-            <h1>BuilderPage</h1>
-            <div style={{ width: '100%', height: '100vh' }}>
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
-                    onInit={() => {
-                        setNodes(topTenCountries?.map((country, index) => ({
-                            id: country.name.common,
-                            position: { x: index * 200, y: 0 },
-                            type: 'custom',
-                            data: { 
-                                name: country.name.common,
-                                flag: country.flag,
-                            }
-                        })));
-                    }}
-                    fitView
-                    nodeTypes={nodeTypes as NodeTypes}
-                    edgeTypes={edgeTypes as EdgeTypes}
-                    defaultEdgeOptions={defaultEdgeOptions}
-                    connectionLineComponent={(props) => <CustomConnectionLine {...props} connectionLineStyle={connectionLineStyle} />}
-                >
-                    <Background />
-                </ReactFlow>
-            </div>
-        </div>
+        <DndContext onDragEnd={handleDragEnd}>
+            <Splitter>
+                <Splitter.Panel defaultSize="70%" min="20%" max="70%">
+                    <RouteGraph nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} />
+                </Splitter.Panel>
+                <Splitter.Panel>
+                    <AddCountryNodePanel onAddCountryNode={onAddCountryNode} />
+                </Splitter.Panel>
+            </Splitter>
+        </DndContext>
     )
 }
