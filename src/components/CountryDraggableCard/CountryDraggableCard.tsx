@@ -19,13 +19,23 @@ export const CountryDraggableCard = ({
             country,
         },
     });
-    const style = transform ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    } : undefined;
+    const style = {
+        wrapper: transform ? {
+            opacity: 0.5,
+            transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,    
+            cursor: 'grabbing',
+            position: 'fixed',
+            zIndex: 1000,
+        } : undefined,
+        card: {
+            marginBottom: '10px',
+            cursor: 'pointer',
+        },
+    };
 
     return (
-        <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-            <Card key={country.name.common} style={{ marginBottom: '10px' }} onClick={() => onAddCountryNode(country)}>
+        <div ref={setNodeRef} style={style.wrapper as React.CSSProperties} {...listeners} {...attributes}>
+            <Card key={country.name.common} style={style.card} onClick={() => onAddCountryNode(country)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span>{country.flag}</span>
                     <span>{country.name.common}</span>

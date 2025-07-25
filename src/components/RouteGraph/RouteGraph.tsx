@@ -14,20 +14,33 @@ export const RouteGraph = ({ nodes, edges, onNodesChange, onEdgesChange, onConne
         id: 'droppable',
     });
     const style = {
-        backgroundColor: isOver ? 'green' : undefined,
-        height: '100vh',
-    };
+        wrapper: {
+            position: 'relative',
+            height: '100%',
+            width: '100%',
+        },
+        dropHere: {
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1,
+            background: 'aquamarine',
+        },
+    }
 
     return (
-        <div ref={setNodeRef} style={style}>
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                fitView
-            />
-        </div>
-    )
+        <div ref={setNodeRef} style={style.wrapper as React.CSSProperties}>
+            {isOver && <div style={style.dropHere as React.CSSProperties}>drop here</div>}
+        <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            fitView
+        />
+    </div>
+)
 }

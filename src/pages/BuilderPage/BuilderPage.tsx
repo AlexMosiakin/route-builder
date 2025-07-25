@@ -1,4 +1,3 @@
-import { Splitter } from "antd";
 import { useCallback, useState } from "react";
 import { addEdge, applyEdgeChanges, applyNodeChanges, type Connection, type Edge, type EdgeChange, type Node, type NodeChange } from "@xyflow/react";
 import '@xyflow/react/dist/style.css';
@@ -27,9 +26,10 @@ export const BuilderPage = () => {
     const onAddCountryNode = useCallback(
         (country: Country) => {
             setNodes((nodesSnapshot) => {
+                const lastNode = nodesSnapshot.length > 0 ? nodesSnapshot[nodesSnapshot.length - 1] : null;
                 const newNode: Node = {
                     id: country.name.common,
-                    position: { x: 0, y: 0 },
+                    position: { x: (lastNode?.position?.x ?? 0) + 170, y: 0 },
                     data: {
                         label: <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span>{country.flag}</span>
@@ -53,14 +53,10 @@ export const BuilderPage = () => {
 
     return (
         <DndContext onDragEnd={handleDragEnd}>
-            <Splitter>
-                <Splitter.Panel defaultSize="70%" min="20%" max="70%">
-                    <RouteGraph nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} />
-                </Splitter.Panel>
-                <Splitter.Panel>
-                    <AddCountryNodePanel onAddCountryNode={onAddCountryNode} />
-                </Splitter.Panel>
-            </Splitter>
+            <div style={{ display: 'flex', flexDirection: 'row', height: '100vh' }}>
+                <RouteGraph nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} />
+                <AddCountryNodePanel nodes={nodes} onAddCountryNode={onAddCountryNode} />
+            </div>
         </DndContext>
     )
 }
