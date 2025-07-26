@@ -1,5 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
-import { ReactFlow, type Edge, type Node, type Connection, type NodeChange, type EdgeChange } from '@xyflow/react'
+import { ReactFlow, type Edge, type Node, type Connection, type NodeChange, type EdgeChange, Controls } from '@xyflow/react'
+import { CustomGraphHeader } from '../CustomGraphHeader/CustomGraphHeader';
 
 interface RouteGraphProps {
     nodes: Node[];
@@ -7,9 +8,10 @@ interface RouteGraphProps {
     onNodesChange: (changes: NodeChange[]) => void
     onEdgesChange: (changes: EdgeChange[]) => void;
     onConnect: (connection: Connection) => void;
+    notifySuccess: (content: string) => void;
 }
 
-export const RouteGraph = ({ nodes, edges, onNodesChange, onEdgesChange, onConnect }: RouteGraphProps) => {
+export const RouteGraph = ({ nodes, edges, onNodesChange, onEdgesChange, onConnect, notifySuccess }: RouteGraphProps) => {
     const { isOver, setNodeRef } = useDroppable({
         id: 'droppable',
     });
@@ -17,7 +19,7 @@ export const RouteGraph = ({ nodes, edges, onNodesChange, onEdgesChange, onConne
         wrapper: {
             position: 'relative',
             height: '100%',
-            width: '100%',
+            flexGrow: 1,
         },
         dropHere: {
             position: 'absolute',
@@ -27,20 +29,31 @@ export const RouteGraph = ({ nodes, edges, onNodesChange, onEdgesChange, onConne
             alignItems: 'center',
             zIndex: 1,
             background: 'aquamarine',
+            opacity: 0.5,
         },
     }
 
+    const route = edges.map((edge) => {
+        return {
+            from: edge.source,
+            to: edge.target,
+        }
+    })
+
     return (
         <div ref={setNodeRef} style={style.wrapper as React.CSSProperties}>
-            {isOver && <div style={style.dropHere as React.CSSProperties}>drop here</div>}
-        <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            fitView
-        />
-    </div>
-)
+            {isOver && <div style={style.dropHere as React.CSSProperties} />}
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                fitView
+            >
+                <Controls />
+                <CustomGraphHeader route={route} notifySuccess={notifySuccess} />
+            </ReactFlow>
+        </div>
+    )
 }

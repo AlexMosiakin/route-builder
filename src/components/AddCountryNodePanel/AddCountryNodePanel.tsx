@@ -18,6 +18,7 @@ export const AddCountryNodePanel = ({ nodes, onAddCountryNode }: AddCountryNodeP
             padding: '0 20px',
             maxHeight: '100vh',
             overflowY: 'scroll',
+            width: '300px',
         },
         countrySearchInput: {
             marginBottom: '10px',

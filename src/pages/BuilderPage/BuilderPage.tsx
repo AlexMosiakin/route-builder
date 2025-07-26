@@ -5,10 +5,29 @@ import { AddCountryNodePanel } from "../../components/AddCountryNodePanel/AddCou
 import type { Country } from "../../domain/country";
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { RouteGraph } from "../../components/RouteGraph/RouteGraph";
+import restrictions from '../../mocks/restrictions.json'
+import { message } from "antd";
 
 export const BuilderPage = () => {
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
+    const [messageApi, contextHolder] = message.useMessage();
+
+    const notifySuccess = useCallback((content: string) => {
+        messageApi.success(content);
+    }, [messageApi]);
+
+    const notifyError = useCallback((content: string) => {
+        messageApi.error(content);
+    }, [messageApi]);
+
+    const style = {
+        wrapper: {
+            display: 'flex',
+            flexDirection: 'row',
+            height: '100vh',
+        },
+    }
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -19,8 +38,20 @@ export const BuilderPage = () => {
         [],
     );
     const onConnect = useCallback(
-        (params: Connection) => setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot)),
-        [],
+        (params: Connection) => {
+            const isLoop = edges.some((edge) => edge.source === params.target) || params.source === params.target
+            const isRestricted = restrictions.some((restriction) => restriction.from === params.source && restriction.to === params.target)
+            if (!isLoop && !isRestricted) {
+                setEdges((edgesSnapshot) => addEdge(params, edgesSnapshot))
+            } else {
+                if (isLoop) {
+                    notifyError('You cannot add a loop to the graph')
+                } else {
+                    notifyError('You cannot add a route that is restricted')
+                }
+            }
+        },
+        [edges, notifyError],
     );
 
     const onAddCountryNode = useCallback(
@@ -45,7 +76,8 @@ export const BuilderPage = () => {
 
 
     function handleDragEnd(event: DragEndEvent) {
-        if (event.over && event.over.id === 'droppable') {
+        const isOver = event.over && event.over.id === 'droppable'
+        if (isOver) {
             onAddCountryNode(event.active.data.current?.country);
         }
     }
@@ -53,8 +85,9 @@ export const BuilderPage = () => {
 
     return (
         <DndContext onDragEnd={handleDragEnd}>
-            <div style={{ display: 'flex', flexDirection: 'row', height: '100vh' }}>
-                <RouteGraph nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} />
+            {contextHolder}
+            <div style={style.wrapper as React.CSSProperties}>
+                <RouteGraph nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} notifySuccess={notifySuccess} />
                 <AddCountryNodePanel nodes={nodes} onAddCountryNode={onAddCountryNode} />
             </div>
         </DndContext>
